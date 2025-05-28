@@ -4,9 +4,9 @@ from agent.Lilith import Lilith
 from environment import SnakeField
 
 
-x_size = 36
-y_size = 24
-grid_step = 20
+x_size = 15
+y_size = 15
+grid_step = 45
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
@@ -49,7 +49,7 @@ def game_over(score):
 
 def draw_field(field_state):
     game_window.fill(black)
-    colors_list = [black, red, green, green]
+    colors_list = [black, white, green, red]
     for pos in range(len(field_state)):
         if pos > 0:
             pygame.draw.rect(game_window, colors_list[field_state[pos]], pygame.Rect(pos % x_size * grid_step,

@@ -90,7 +90,7 @@ class DuelingDDQN:
 
         self.target_model = self.value_model_fn(nS, nA)
         self.online_model = self.value_model_fn(nS, nA)
-        self.update_network(tau=1.0)
+        self.update_network(tau=0.2)
 
         self.value_optimizer = self.value_optimizer_fn(self.online_model,
                                                        self.value_optimizer_lr)
@@ -122,28 +122,32 @@ class DuelingDDQN:
                     gc.collect()
                     break
 
-        final_eval_score = self.evaluate(self.online_model, env, n_episodes=10)
+            print(str(self.episode_reward[-1]) + '   ' +
+                  str(self.episode_timestep[-1]) + '   ' +
+                  str(self.episode_exploration))
+
+        final_eval_score = self.evaluate(self.online_model, 10 * max_episodes, env, n_episodes=10)
         print('Training complete.')
 
         return final_eval_score
 
-    def evaluate(self, eval_policy_model, eval_env, n_episodes=1):
+    def evaluate(self, eval_policy_model, step_limit, eval_env, n_episodes=1):
         rs = []
         for _ in range(n_episodes):
             gc.collect()
-            r, _ = self.evaluate_once(eval_policy_model, eval_env)
+            r, _ = self.evaluate_once(eval_policy_model, step_limit, eval_env)
             rs.append(r)
         return np.mean(rs)
 
-    def evaluate_once(self, eval_policy_model, eval_env):
+    def evaluate_once(self, eval_policy_model, step_limit, eval_env):
         state, d = eval_env.reset(), False
         reward_sum = 0
-        state_history = []
+        state_history = [(state[len(state) // 2:], reward_sum)]
         for i in count():
             a = self.evaluation_strategy.select_action(eval_policy_model, state)
             state, r, d, _ = eval_env.step(a)
             reward_sum += r
-            state_history.append((state, reward_sum))
-            if d or i > 1000:
+            state_history.append((state[len(state) // 2:], reward_sum))
+            if d or i > step_limit:
                 break
         return reward_sum, state_history
