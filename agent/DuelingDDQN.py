@@ -46,8 +46,7 @@ class DuelingDDQN:
 
         argmax_a_q_sp = self.online_model(next_states).max(1)[1]
         q_sp = self.target_model(next_states).detach()
-        max_a_q_sp = q_sp[
-            np.arange(batch_size), argmax_a_q_sp].unsqueeze(1)
+        max_a_q_sp = q_sp[np.arange(batch_size), argmax_a_q_sp].unsqueeze(1)
         target_q_sa = rewards + (self.gamma * max_a_q_sp * (1 - is_terminals))
         q_sa = self.online_model(states).gather(1, actions)
 
@@ -90,7 +89,7 @@ class DuelingDDQN:
 
         self.target_model = self.value_model_fn(nS, nA)
         self.online_model = self.value_model_fn(nS, nA)
-        self.update_network(tau=0.2)
+        self.update_network(tau=0.1)
 
         self.value_optimizer = self.value_optimizer_fn(self.online_model,
                                                        self.value_optimizer_lr)
@@ -122,9 +121,7 @@ class DuelingDDQN:
                     gc.collect()
                     break
 
-            print(str(self.episode_reward[-1]) + '   ' +
-                  str(self.episode_timestep[-1]) + '   ' +
-                  str(self.episode_exploration))
+            print(str(self.episode_reward[-1]) + '   ' + str(self.episode_timestep[-1]))
 
         final_eval_score = self.evaluate(self.online_model, 10 * max_episodes, env, n_episodes=10)
         print('Training complete.')

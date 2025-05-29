@@ -15,13 +15,13 @@ class SnakeField:
         self.action_space = len(self.actions)
 
         self.directions = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        self.direction = 3
+        self.direction = 0
 
-        self.spawn_time_limit = 5
+        self.spawn_time_limit = 1000
         self.fruit_timer = 0
 
     def init_positions(self):
-        head_position = self.y_size // 2 * self.x_size + self.x_size // 2
+        head_position = (self.y_size * self.x_size) // 2
         snake_body = [head_position + 1, head_position + 2, head_position + 3, head_position + 4]
 
         fruit_positions = [random.randrange(0, self.x_size * self.y_size)]
@@ -46,7 +46,7 @@ class SnakeField:
         self.head_position, self.snake_body, self.fruit_positions = self.init_positions()
         self.field = np.zeros(self.x_size * self.y_size, dtype=np.int8)
         self.fruit_timer = 0
-        self.direction = 3
+        self.direction = 0
         return self.get_state()
 
     def spawn_fruit(self):
@@ -62,39 +62,32 @@ class SnakeField:
 
         self.snake_body.insert(0, self.head_position)
 
-        terminal = False
-        reword = 1
-
         match self.directions[self.direction]:
             case 'UP':
-                self.head_position -= self.x_size
-                terminal = self.head_position < 0
+                self.head_position = (self.head_position - self.x_size) % (self.x_size * self.y_size)
             case 'RIGHT':
-                self.head_position += 1
-                terminal = self.head_position % self.x_size == 0
+                self.head_position = self.head_position - self.head_position % self.x_size + \
+                                     (self.head_position + 1) % self.x_size
             case 'DOWN':
-                self.head_position += self.x_size
-                terminal = self.head_position >= self.x_size * self.y_size
+                self.head_position = (self.head_position + self.x_size) % (self.x_size * self.y_size)
             case 'LEFT':
-                terminal = self.head_position % self.x_size == 0
-                self.head_position -= 1
+                self.head_position = self.head_position - self.head_position % self.x_size + \
+                                     (self.head_position - 1) % self.x_size
 
-        if terminal:
-            reword = -1
-            return self.get_state(terminal), reword, terminal, []
-
+        reword = 0
         if self.head_position in self.fruit_positions:
-            reword = 100
+            reword = 10
             self.fruit_positions.remove(self.head_position)
+            self.spawn_fruit()
         else:
             self.snake_body.pop()
 
+        terminal = False
         if self.head_position not in self.snake_body:
             self.fruit_timer += 1
             if self.spawn_time_limit <= self.fruit_timer:
                 self.spawn_fruit()
         else:
             terminal = True
-            reword = -1
 
         return self.get_state(), reword, terminal, []
