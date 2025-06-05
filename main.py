@@ -4,9 +4,9 @@ from agent.Lilith import Lilith
 from environment import SnakeField
 
 
-x_size = 5
-y_size = 4
-grid_step = 145
+x_size = 9
+y_size = 9
+grid_step = 45
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)

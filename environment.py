@@ -15,7 +15,7 @@ class SnakeField:
         self.action_space = len(self.actions)
 
         self.directions = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        self.direction = 0
+        self.direction = 3
 
         self.spawn_time_limit = 1000
         self.fruit_timer = 0
@@ -46,7 +46,7 @@ class SnakeField:
         self.head_position, self.snake_body, self.fruit_positions = self.init_positions()
         self.field = np.zeros(self.x_size * self.y_size, dtype=np.int8)
         self.fruit_timer = 0
-        self.direction = 0
+        self.direction = 3
         return self.get_state()
 
     def spawn_fruit(self):
@@ -89,5 +89,6 @@ class SnakeField:
                 self.spawn_fruit()
         else:
             terminal = True
+            reword = -1
 
         return self.get_state(), reword, terminal, []

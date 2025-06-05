@@ -2,20 +2,22 @@ from torch import optim
 
 from agent.DuelingDDQN import DuelingDDQN
 from agent.FCDuelingQ import FCDuelingQ
-from agent.ReplayBuffer import ReplayBuffer
+from agent.PrioritizedReplayBuffer import PrioritizedReplayBuffer
 from agent.strategies.EGreedyExpStrategy import EGreedyExpStrategy
 from agent.strategies.GreedyStrategy import GreedyStrategy
 
 
 class Lilith:
     def __init__(self):
-        value_model_fn = lambda nS, nA: FCDuelingQ(nS, nA, hidden_dims=(128, 32, 32))
+        value_model_fn = lambda nS, nA: FCDuelingQ(nS, nA, hidden_dims=(512, 128, 32))
         value_optimizer_fn = lambda net, lr: optim.RMSprop(net.parameters(), lr=lr)
         training_strategy_fn = lambda: EGreedyExpStrategy(init_epsilon=1.0,
                                                           min_epsilon=0.3,
                                                           decay_steps=200)
         evaluation_strategy_fn = lambda: GreedyStrategy()
-        replay_buffer_fn = lambda: ReplayBuffer(max_size=2000, batch_size=64)
+        replay_buffer_fn = lambda: PrioritizedReplayBuffer(
+            max_samples=20000, batch_size=64, rank_based=True,
+            alpha=0.6, beta0=0.1, beta_rate=0.99995)
 
         self.agent = DuelingDDQN(replay_buffer_fn,
                                  value_model_fn,
@@ -29,7 +31,7 @@ class Lilith:
                                  tau=0.1)
 
     def train(self, env):
-        final_eval_score = self.agent.train(gamma=0.99, max_episodes=1000, env=env)
+        final_eval_score = self.agent.train(gamma=0.99, max_episodes=10000, env=env)
         print(final_eval_score)
 
     def demonstration(self, env):

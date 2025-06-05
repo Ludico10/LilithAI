@@ -41,7 +41,8 @@ class DuelingDDQN:
         self.tau = tau
 
     def optimize_model(self, experiences):
-        states, actions, rewards, next_states, is_terminals = experiences
+        idxs, weights, (states, actions, rewards, next_states, is_terminals) = experiences
+        weights = self.online_model.numpy_float_to_device(weights)
         batch_size = len(is_terminals)
 
         argmax_a_q_sp = self.online_model(next_states).max(1)[1]
@@ -51,12 +52,15 @@ class DuelingDDQN:
         q_sa = self.online_model(states).gather(1, actions)
 
         td_error = q_sa - target_q_sa
-        value_loss = td_error.pow(2).mul(0.5).mean()
+        value_loss = (weights * td_error).pow(2).mul(0.5).mean()
         self.value_optimizer.zero_grad()
         value_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.online_model.parameters(),
                                        self.max_gradient_norm)
         self.value_optimizer.step()
+
+        priorities = np.abs(td_error.detach().cpu().numpy())
+        self.replay_buffer.update(idxs, priorities)
 
     def interaction_step(self, state, env):
         action = self.training_strategy.select_action(self.online_model, state)
@@ -64,6 +68,7 @@ class DuelingDDQN:
         is_truncated = 'TimeLimit.truncated' in info and info['TimeLimit.truncated']
         is_failure = is_terminal and not is_truncated
         experience = (state, action, reward, new_state, float(is_failure))
+
         self.replay_buffer.store(experience)
         self.episode_reward[-1] += reward
         self.episode_timestep[-1] += 1
@@ -80,16 +85,16 @@ class DuelingDDQN:
             target.data.copy_(mixed_weights)
 
     def train(self, gamma, max_episodes, env):
+        self.gamma = gamma
 
         nS, nA = env.observation_space, env.action_space
-        self.gamma = gamma
         self.episode_timestep = []
         self.episode_reward = []
         self.episode_exploration = []
 
         self.target_model = self.value_model_fn(nS, nA)
         self.online_model = self.value_model_fn(nS, nA)
-        self.update_network(tau=0.1)
+        self.update_network(tau=1.0)
 
         self.value_optimizer = self.value_optimizer_fn(self.online_model,
                                                        self.value_optimizer_lr)
@@ -98,6 +103,8 @@ class DuelingDDQN:
         self.training_strategy = self.training_strategy_fn()
         self.evaluation_strategy = self.evaluation_strategy_fn()
 
+        result = np.empty((max_episodes, 5))
+        result[:] = np.nan
         for episode in range(1, max_episodes + 1):
 
             state, is_terminal = env.reset(), False
@@ -111,7 +118,9 @@ class DuelingDDQN:
                 min_samples = self.replay_buffer.batch_size * self.n_warmup_batches
                 if len(self.replay_buffer) > min_samples:
                     experiences = self.replay_buffer.sample()
-                    experiences = self.online_model.load(experiences)
+                    idxs, weights, samples = experiences
+                    experiences = self.online_model.load(samples)
+                    experiences = (idxs, weights) + (experiences,)
                     self.optimize_model(experiences)
 
                 if np.sum(self.episode_timestep) % self.update_target_every_steps == 0:
