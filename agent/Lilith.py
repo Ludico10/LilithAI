@@ -31,9 +31,9 @@ class Lilith:
                                  tau=0.1)
 
     def train(self, env):
-        final_eval_score = self.agent.train(gamma=0.99, max_episodes=10000, env=env)
+        final_eval_score = self.agent.train(gamma=0.99, max_episodes=10, env=env)
         print(final_eval_score)
 
     def demonstration(self, env):
-        result, history = self.agent.evaluate_once(self.agent.online_model, step_limit=5000, eval_env=env)
+        result, history = self.agent.evaluate_once(self.agent.online_model, step_limit=500, eval_env=env)
         return history
