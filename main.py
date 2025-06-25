@@ -27,7 +27,7 @@ environment = SnakeField(x_size, y_size)
 
 lilith = DuelingDDQN(environment.action_space)
 lilith.compile(optimizer=optimizers.adam_v2.Adam(learning_rate=3e-2), loss_fn=losses.MeanSquaredError())
-lilith.fit(environment)
+lilith.fit(environment, episodes=2000)
 
 history, _ = lilith.predict(environment)
 buttons = []
@@ -80,7 +80,7 @@ def game_exit():
 
 
 def restart():
-    h = lilith.predict(environment)
+    h, _ = lilith.predict(environment)
     buttons.clear()
     return h
 
@@ -104,7 +104,8 @@ while True:
                 if moment < len(history):
                     state, score = history[moment]
                     moment += 1
-                    draw_field(state[0])
+                    flat_state = state.flatten()
+                    draw_field(flat_state[:len(flat_state) // 2])
                     show_score(score, moment, white, 'times new roman', 20)
                 else:
                     game_over(score)

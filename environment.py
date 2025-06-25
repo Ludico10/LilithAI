@@ -39,7 +39,7 @@ class SnakeField:
         if not border_collision:
             self.field[self.head_position] = 1
 
-        double_field = np.concatenate([self.field, old_field])
+        double_field = np.concatenate([self.field, old_field], dtype=np.int8)
         return np.reshape(double_field, (self.x_size, self.y_size, 2))
 
     def reset(self):
