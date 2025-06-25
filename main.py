@@ -1,12 +1,20 @@
 import pygame
 import sys
 
-from agent.Lilith import Lilith
+import tensorflow as tf
+
+from tensorflow.python.keras import optimizers
+from tensorflow.python.keras import losses
+
+from agent.DuelingDDQN import DuelingDDQN
 from environment import SnakeField
 
 
-x_size = 9
-y_size = 9
+print("Доступные устройства:")
+print(tf.config.list_physical_devices('GPU'))
+
+x_size = 10
+y_size = 10
 grid_step = 45
 
 black = pygame.Color(0, 0, 0)
@@ -16,9 +24,12 @@ green = pygame.Color(0, 255, 0)
 blue = pygame.Color(0, 0, 255)
 
 environment = SnakeField(x_size, y_size)
-lilith = Lilith()
-lilith.train(environment)
-history = lilith.demonstration(environment)
+
+lilith = DuelingDDQN(environment.action_space)
+lilith.compile(optimizer=optimizers.adam_v2.Adam(learning_rate=3e-2), loss_fn=losses.MeanSquaredError())
+lilith.fit(environment)
+
+history, _ = lilith.predict(environment)
 buttons = []
 
 pygame.init()
@@ -69,7 +80,7 @@ def game_exit():
 
 
 def restart():
-    h = lilith.demonstration(environment)
+    h = lilith.predict(environment)
     buttons.clear()
     return h
 
@@ -93,7 +104,7 @@ while True:
                 if moment < len(history):
                     state, score = history[moment]
                     moment += 1
-                    draw_field(state)
+                    draw_field(state[0])
                     show_score(score, moment, white, 'times new roman', 20)
                 else:
                     game_over(score)

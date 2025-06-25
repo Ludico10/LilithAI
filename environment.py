@@ -28,19 +28,19 @@ class SnakeField:
         return head_position, snake_body, fruit_positions
 
     def get_state(self, border_collision=False):
-        new_field = np.zeros(self.x_size * self.y_size, dtype=np.int8)
+        old_field = self.field.copy()
+        self.field = np.zeros(self.x_size * self.y_size, dtype=np.int8)
 
         for fruit in self.fruit_positions:
-            new_field[fruit] = 3
+            self.field[fruit] = 3
 
         for part in self.snake_body:
-            new_field[part] = 2
+            self.field[part] = 2
         if not border_collision:
-            new_field[self.head_position] = 1
+            self.field[self.head_position] = 1
 
-        state = np.concatenate((self.field, new_field), dtype=np.int8)
-        self.field = new_field
-        return state
+        double_field = np.concatenate([self.field, old_field])
+        return np.reshape(double_field, (self.x_size, self.y_size, 2))
 
     def reset(self):
         self.head_position, self.snake_body, self.fruit_positions = self.init_positions()
